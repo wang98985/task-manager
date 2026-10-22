@@ -1,4 +1,7 @@
 const path = require('node:path');
+
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
 const express = require('express');
