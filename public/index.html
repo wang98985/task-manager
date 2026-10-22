@@ -1039,31 +1039,39 @@
       renderStats();
       renderFilters();
 
-      listEl.replaceChildren();
+      const scrollY = window.scrollY;
 
+      let fragment;
       if (state.loading) {
-        listEl.append(createLoadingNode());
-        return;
+        fragment = document.createDocumentFragment();
+        fragment.append(createLoadingNode());
+      } else if (state.error) {
+        fragment = document.createDocumentFragment();
+        fragment.append(createErrorNode(state.error));
+      } else {
+        const visible =
+          state.filter === 'all'
+            ? state.tasks
+            : state.tasks.filter((task) => task.priority === state.filter);
+
+        if (visible.length === 0) {
+          fragment = document.createDocumentFragment();
+          fragment.append(createEmptyNode());
+        } else {
+          fragment = document.createDocumentFragment();
+          visible.forEach((task) => fragment.append(createTaskNode(task)));
+        }
       }
 
-      if (state.error) {
-        listEl.append(createErrorNode(state.error));
-        return;
-      }
+      // 单次原子替换，避免清空再追加导致页面高度塌陷、滚动跳变
+      listEl.replaceChildren(fragment);
 
-      const visible =
-        state.filter === 'all'
-          ? state.tasks
-          : state.tasks.filter((task) => task.priority === state.filter);
-
-      if (visible.length === 0) {
-        listEl.append(createEmptyNode());
-        return;
-      }
-
-      const fragment = document.createDocumentFragment();
-      visible.forEach((task) => fragment.append(createTaskNode(task)));
-      listEl.append(fragment);
+      // 恢复滚动位置，防止页面因内容重排而回退到顶部
+      window.requestAnimationFrame(() => {
+        if (window.scrollY !== scrollY) {
+          window.scrollTo({ top: scrollY, behavior: 'instant' });
+        }
+      });
     }
 
     function renderStats() {
