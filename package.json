@@ -1,0 +1,18 @@
+{
+  "name": "smart-task-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express + Supabase 智能任务管理系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "express": "^4.21.2"
+  }
+}

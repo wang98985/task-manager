@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="基于 Express 与 Supabase 的智能任务管理系统" />
+  <title>智能任务管理</title>
+  <style>
+    :root {
+      --bg: #f4f5f8;
+      --surface: #ffffff;
+      --ink: #171a21;
+      --muted: #737987;
+      --line: #e8e9ee;
+      --accent: #4f46e5;
+      --accent-strong: #4338ca;
+      --accent-soft: #eef2ff;
+      --high: #dc2626;
+      --high-soft: #fef2f2;
+      --medium: #d97706;
+      --medium-soft: #fffbeb;
+      --low: #0d9488;
+      --low-soft: #f0fdfa;
+      --shadow: 0 24px 60px -24px rgba(23, 26, 33, 0.22);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 460px at 8% -8%, #e0e7ff 0%, transparent 60%),
+        radial-gradient(820px 480px at 100% 0%, #ccfbf1 0%, transparent 58%),
+        var(--bg);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .page {
+      width: min(920px, 100%);
+      margin: 0 auto;
+      padding: 52px 20px 36px;
+    }
+
+    /* ---------- 顶部 ---------- */
+    .hero {
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px 6px 7px;
+      border-radius: 999px;
+      background: rgba(79, 70, 229, 0.08);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .brand-mark svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    h1 {
+      margin: 18px 0 0;
+      font-size: clamp(30px, 5vw, 42px);
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      max-width: 560px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stats {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      margin-top: 24px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+    }
+
+    .stat strong {
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stat + .stat {
+      position: relative;
+      padding-left: 26px;
+    }
+
+    .stat + .stat::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 1px;
+      height: 20px;
+      transform: translateY(-50%);
+      background: #d9dbe3;
+    }
+
+    /* ---------- 主卡片 ---------- */
+    .card {
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .composer {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .input-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      height: 50px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfbfd;
+      color: var(--ink);
+      font-size: 14px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease,
+        background-color 0.18s ease;
+    }
+
+    .input-wrap input::placeholder {
+      color: #9ca1ad;
+    }
+
+    .input-wrap input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .select-wrap {
+      position: relative;
+      flex: none;
+    }
+
+    .select-wrap select {
+      height: 50px;
+      padding: 0 38px 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background-color: #fbfbfd;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23737987' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      color: #3f4451;
+      font-size: 13px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .select-wrap select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .add-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 50px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #5b52ea, var(--accent-strong));
+      color: #fff;
+      font-size: 14px;
+      font-weight: 650;
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: 0 10px 22px -10px rgba(79, 70, 229, 0.85);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .add-btn svg {
+      width: 15px;
+      height: 15px;
+      flex: none;
+    }
+
+    .add-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px -10px rgba(79, 70, 229, 0.9);
+    }
+
+    .add-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .add-btn:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ---------- 筛选 ---------- */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 22px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #4b5160;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.18s ease, border-color 0.18s ease,
+        background-color 0.18s ease;
+    }
+
+    .chip:hover {
+      border-color: #c7c9d4;
+    }
+
+    .chip.is-active {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .chip-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: #f0f1f5;
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chip.is-active .chip-count {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    /* ---------- 列表 ---------- */
+    .list-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 26px 2px 12px;
+    }
+
+    .list-head h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .list-head span {
+      color: #9aa0ad;
+      font-size: 11px;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      animation: rise 0.28s ease both;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .task:hover {
+      border-color: #dcdde5;
+      box-shadow: 0 12px 26px -20px rgba(23, 26, 33, 0.45);
+    }
+
+    .task-main {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .priority-bar {
+      width: 4px;
+      flex: none;
+      border-radius: 999px;
+      background: #d1d5db;
+    }
+
+    .priority-bar.high {
+      background: #ef4444;
+    }
+
+    .priority-bar.medium {
+      background: #f59e0b;
+    }
+
+    .priority-bar.low {
+      background: #14b8a6;
+    }
+
+    .task-content {
+      min-width: 0;
+    }
+
+    .task-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+      word-break: break-word;
+      transition: color 0.18s ease;
+    }
+
+    .task.is-done .task-title {
+      color: #9aa0ad;
+      text-decoration: line-through;
+      text-decoration-thickness: 1.5px;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 7px;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    .badge.high {
+      background: var(--high-soft);
+      color: var(--high);
+    }
+
+    .badge.medium {
+      background: var(--medium-soft);
+      color: var(--medium);
+    }
+
+    .badge.low {
+      background: var(--low-soft);
+      color: var(--low);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #8a909c;
+      font-size: 10.5px;
+    }
+
+    .status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #c3c6cf;
+    }
+
+    .status.done {
+      color: var(--low);
+    }
+
+    .status.done::before {
+      background: #14b8a6;
+    }
+
+    .task-time {
+      color: #a2a7b2;
+      font-size: 10.5px;
+      white-space: nowrap;
+    }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex: none;
+    }
+
+    .btn-toggle,
+    .btn-delete {
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      color: #505665;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: color 0.18s ease, border-color 0.18s ease,
+        background-color 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn-toggle:hover:not(:disabled) {
+      border-color: #c9c4f7;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .btn-toggle.is-done:hover:not(:disabled) {
+      border-color: #b7ebe3;
+      background: var(--low-soft);
+      color: var(--low);
+    }
+
+    .btn-delete {
+      border-color: #f1d9d5;
+      color: #b42318;
+    }
+
+    .btn-delete:hover:not(:disabled) {
+      background: #fef3f2;
+      border-color: #eebcb5;
+    }
+
+    .btn-toggle:disabled,
+    .btn-delete:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ---------- 加载 / 空状态 / 错误 ---------- */
+    .loading,
+    .empty,
+    .error-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 44px 20px;
+      border: 1px dashed #dfe1e8;
+      border-radius: 16px;
+      background: #fcfcfd;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .loading {
+      flex-direction: row;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #dfe1e8;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    .empty svg {
+      width: 46px;
+      height: 46px;
+      margin-bottom: 12px;
+      color: #c1c5d0;
+    }
+
+    .empty h3,
+    .error-box h3 {
+      margin: 0;
+      color: #4b5160;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .empty p,
+    .error-box p {
+      margin: 6px 0 0;
+      max-width: 360px;
+      color: #9aa0ad;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .error-box {
+      border-color: #f1d9d5;
+      background: #fffbfa;
+    }
+
+    .error-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      margin-bottom: 10px;
+      border-radius: 50%;
+      background: #fef3f2;
+      color: #b42318;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .retry-btn {
+      margin-top: 14px;
+      padding: 8px 14px;
+      border: 1px solid #e9b9b2;
+      border-radius: 9px;
+      background: #fff;
+      color: #b42318;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .retry-btn:hover {
+      background: #fef3f2;
+    }
+
+    /* ---------- 页脚 / 提示 ---------- */
+    .footer {
+      margin-top: 22px;
+      text-align: center;
+      color: #a2a7b2;
+      font-size: 11px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 20;
+      padding: 11px 18px;
+      border-radius: 999px;
+      background: rgba(23, 26, 33, 0.92);
+      color: #fff;
+      font-size: 12.5px;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 16px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .toast.error {
+      background: #b42318;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        padding: 30px 14px 26px;
+      }
+
+      .card {
+        padding: 16px;
+        border-radius: 18px;
+      }
+
+      .composer {
+        flex-wrap: wrap;
+      }
+
+      .input-wrap {
+        flex-basis: 100%;
+      }
+
+      .select-wrap {
+        flex: 1;
+      }
+
+      .select-wrap select {
+        width: 100%;
+      }
+
+      .add-btn {
+        flex: 1;
+        padding: 0 14px;
+      }
+
+      .stats {
+        gap: 18px;
+      }
+
+      .stat + .stat {
+        padding-left: 18px;
+      }
+
+      .task {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .task-actions {
+        justify-content: flex-end;
+      }
+
+      .btn-toggle,
+      .btn-delete {
+        padding: 8px 13px;
+      }
+
+      .filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+      }
+
+      .filters::-webkit-scrollbar {
+        display: none;
+      }
+
+      .chip {
+        flex: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M4.5 10.5l3.2 3.2L15.5 6" stroke="currentColor"
+              stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        TASKFLOW
+      </div>
+      <h1>智能任务管理</h1>
+      <p class="subtitle">用优先级理清思路，把时间留给真正重要的事。任务数据云端保存，多人访问实时共享。</p>
+      <div class="stats" aria-label="任务统计">
+        <div class="stat"><strong id="stat-pending">0</strong><span>待完成</span></div>
+        <div class="stat"><strong id="stat-done">0</strong><span>已完成</span></div>
+        <div class="stat"><strong id="stat-total">0</strong><span>全部任务</span></div>
+      </div>
+    </header>
+
+    <main class="card">
+      <form id="task-form" class="composer" autocomplete="off">
+        <div class="input-wrap">
+          <label class="sr-only" for="task-title">任务内容</label>
+          <input id="task-title" name="title" maxlength="200" required
+            placeholder="添加一条新任务，例如：完成季度复盘报告" />
+        </div>
+
+        <div class="select-wrap">
+          <label class="sr-only" for="task-priority">优先级</label>
+          <select id="task-priority" name="priority">
+            <option value="high">高优先级</option>
+            <option value="medium" selected>中优先级</option>
+            <option value="low">低优先级</option>
+          </select>
+        </div>
+
+        <button type="submit" class="add-btn" id="add-btn" disabled>
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" />
+          </svg>
+          <span>添加任务</span>
+        </button>
+      </form>
+
+      <div class="filters" role="group" aria-label="按优先级筛选">
+        <button type="button" class="chip is-active" data-filter="all" aria-pressed="true">
+          全部 <span class="chip-count" id="count-all">0</span>
+        </button>
+        <button type="button" class="chip" data-filter="high" aria-pressed="false">
+          高优先级 <span class="chip-count" id="count-high">0</span>
+        </button>
+        <button type="button" class="chip" data-filter="medium" aria-pressed="false">
+          中优先级 <span class="chip-count" id="count-medium">0</span>
+        </button>
+        <button type="button" class="chip" data-filter="low" aria-pressed="false">
+          低优先级 <span class="chip-count" id="count-low">0</span>
+        </button>
+      </div>
+
+      <div class="list-head">
+        <h2>任务列表</h2>
+        <span>按创建时间倒序</span>
+      </div>
+
+      <div id="task-list" class="task-list">
+        <div class="loading"><span class="spinner"></span><span>正在加载任务…</span></div>
+      </div>
+    </main>
+
+    <footer class="footer">Node.js + Express + Supabase · 数据云端持久化</footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const API = '/api/tasks';
+    const PRIORITY_LABELS = {
+      high: '高优先级',
+      medium: '中优先级',
+      low: '低优先级',
+    };
+
+    const state = {
+      tasks: [],
+      filter: 'all',
+      loading: true,
+      error: '',
+      busy: new Set(),
+    };
+
+    const form = document.getElementById('task-form');
+    const titleInput = document.getElementById('task-title');
+    const prioritySelect = document.getElementById('task-priority');
+    const addBtn = document.getElementById('add-btn');
+    const addBtnLabel = addBtn.querySelector('span');
+    const listEl = document.getElementById('task-list');
+    const toastEl = document.getElementById('toast');
+    const statPending = document.getElementById('stat-pending');
+    const statDone = document.getElementById('stat-done');
+    const statTotal = document.getElementById('stat-total');
+    const countEls = {
+      all: document.getElementById('count-all'),
+      high: document.getElementById('count-high'),
+      medium: document.getElementById('count-medium'),
+      low: document.getElementById('count-low'),
+    };
+    const chips = Array.from(document.querySelectorAll('.chip'));
+
+    const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    let submitting = false;
+    let toastTimer = null;
+
+    /* ---------- 工具函数 ---------- */
+
+    function formatTime(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '时间未知';
+      return timeFormatter.format(date);
+    }
+
+    function showToast(message, type = 'success') {
+      toastEl.textContent = message;
+      toastEl.className = 'toast show' + (type === 'error' ? ' error' : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2400);
+    }
+
+    function syncComposer() {
+      addBtn.disabled = submitting || !titleInput.value.trim();
+    }
+
+    /* ---------- 数据请求 ---------- */
+
+    async function loadTasks() {
+      state.loading = true;
+      state.error = '';
+      render();
+
+      try {
+        const res = await fetch(API, {
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+        });
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(payload.error || `加载失败（${res.status}）`);
+        }
+
+        state.tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+      } catch (error) {
+        state.tasks = [];
+        state.error = error.message || '无法连接到服务器';
+      } finally {
+        state.loading = false;
+        render();
+      }
+    }
+
+    async function addTask(event) {
+      event.preventDefault();
+      const title = titleInput.value.trim();
+      if (!title || submitting) return;
+
+      submitting = true;
+      addBtnLabel.textContent = '添加中…';
+      syncComposer();
+
+      try {
+        const res = await fetch(API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            title,
+            priority: prioritySelect.value,
+          }),
+        });
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(payload.error || '添加任务失败');
+        }
+
+        if (payload.task) {
+          state.tasks.unshift(payload.task);
+        }
+
+        titleInput.value = '';
+        prioritySelect.value = 'medium';
+        showToast('任务已添加');
+        render();
+      } catch (error) {
+        showToast(error.message || '添加任务失败，请稍后重试', 'error');
+      } finally {
+        submitting = false;
+        addBtnLabel.textContent = '添加任务';
+        syncComposer();
+        titleInput.focus();
+      }
+    }
+
+    async function toggleTask(task) {
+      if (state.busy.has(task.id)) return;
+
+      state.busy.add(task.id);
+      render();
+
+      try {
+        const res = await fetch(`${API}/${encodeURIComponent(task.id)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ completed: !task.completed }),
+        });
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(payload.error || '更新任务失败');
+        }
+
+        if (payload.task) {
+          const index = state.tasks.findIndex((item) => item.id === task.id);
+          if (index !== -1) state.tasks[index] = payload.task;
+        }
+
+        showToast(payload.task?.completed ? '任务已完成' : '任务已恢复为待办');
+      } catch (error) {
+        showToast(error.message || '更新任务失败，请稍后重试', 'error');
+      } finally {
+        state.busy.delete(task.id);
+        render();
+      }
+    }
+
+    async function deleteTask(task) {
+      if (state.busy.has(task.id)) return;
+      if (!window.confirm(`确定删除「${task.title}」吗？`)) return;
+
+      state.busy.add(task.id);
+      render();
+
+      try {
+        const res = await fetch(`${API}/${encodeURIComponent(task.id)}`, {
+          method: 'DELETE',
+          headers: { Accept: 'application/json' },
+        });
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(payload.error || '删除任务失败');
+        }
+
+        state.tasks = state.tasks.filter((item) => item.id !== task.id);
+        showToast('任务已删除');
+      } catch (error) {
+        showToast(error.message || '删除任务失败，请稍后重试', 'error');
+      } finally {
+        state.busy.delete(task.id);
+        render();
+      }
+    }
+
+    /* ---------- 渲染 ---------- */
+
+    function render() {
+      renderStats();
+      renderFilters();
+
+      listEl.replaceChildren();
+
+      if (state.loading) {
+        listEl.append(createLoadingNode());
+        return;
+      }
+
+      if (state.error) {
+        listEl.append(createErrorNode(state.error));
+        return;
+      }
+
+      const visible =
+        state.filter === 'all'
+          ? state.tasks
+          : state.tasks.filter((task) => task.priority === state.filter);
+
+      if (visible.length === 0) {
+        listEl.append(createEmptyNode());
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      visible.forEach((task) => fragment.append(createTaskNode(task)));
+      listEl.append(fragment);
+    }
+
+    function renderStats() {
+      const total = state.tasks.length;
+      const done = state.tasks.reduce(
+        (count, task) => count + (task.completed ? 1 : 0),
+        0,
+      );
+      statTotal.textContent = String(total);
+      statDone.textContent = String(done);
+      statPending.textContent = String(total - done);
+    }
+
+    function renderFilters() {
+      const counts = { all: state.tasks.length, high: 0, medium: 0, low: 0 };
+      state.tasks.forEach((task) => {
+        if (counts[task.priority] !== undefined) {
+          counts[task.priority] += 1;
+        }
+      });
+
+      Object.entries(countEls).forEach(([key, el]) => {
+        el.textContent = String(counts[key]);
+      });
+
+      chips.forEach((chip) => {
+        const active = chip.dataset.filter === state.filter;
+        chip.classList.toggle('is-active', active);
+        chip.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function createLoadingNode() {
+      const box = document.createElement('div');
+      box.className = 'loading';
+      box.innerHTML =
+        '<span class="spinner" aria-hidden="true"></span><span>正在加载任务…</span>';
+      return box;
+    }
+
+    function createErrorNode(message) {
+      const box = document.createElement('div');
+      box.className = 'error-box';
+
+      const icon = document.createElement('div');
+      icon.className = 'error-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = '!';
+
+      const title = document.createElement('h3');
+      title.textContent = '暂时无法加载任务';
+
+      const detail = document.createElement('p');
+      detail.textContent = message;
+
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'retry-btn';
+      retry.textContent = '重新加载';
+      retry.addEventListener('click', loadTasks);
+
+      box.append(icon, title, detail, retry);
+      return box;
+    }
+
+    function createEmptyNode() {
+      const box = document.createElement('div');
+      box.className = 'empty';
+      const filtered = state.filter !== 'all';
+
+      box.innerHTML = `
+        <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect x="9" y="7" width="30" height="36" rx="5" stroke="currentColor" stroke-width="2" />
+          <path d="M17 16h14M17 24h14M17 32h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <h3>${filtered ? '这个优先级下暂无任务' : '还没有任务'}</h3>
+        <p>${filtered ? '切换筛选条件看看，或在上方添加一条新任务。' : '在上方输入内容，添加你的第一条任务吧。'}</p>
+      `;
+      return box;
+    }
+
+    function createTaskNode(task) {
+      const article = document.createElement('article');
+      article.className = 'task' + (task.completed ? ' is-done' : '');
+      article.dataset.id = task.id;
+
+      const main = document.createElement('div');
+      main.className = 'task-main';
+
+      const bar = document.createElement('span');
+      bar.className = 'priority-bar ' + task.priority;
+      bar.setAttribute('aria-hidden', 'true');
+
+      const content = document.createElement('div');
+      content.className = 'task-content';
+
+      const title = document.createElement('h3');
+      title.className = 'task-title';
+      title.textContent = task.title;
+
+      const meta = document.createElement('div');
+      meta.className = 'task-meta';
+
+      const badge = document.createElement('span');
+      badge.className = 'badge ' + task.priority;
+      badge.textContent = PRIORITY_LABELS[task.priority] || task.priority;
+
+      const status = document.createElement('span');
+      status.className = 'status' + (task.completed ? ' done' : '');
+      status.textContent = task.completed ? '已完成' : '进行中';
+
+      const time = document.createElement('time');
+      time.className = 'task-time';
+      time.dateTime = task.created_at || '';
+      time.title = '创建时间';
+      time.textContent = formatTime(task.created_at);
+
+      meta.append(badge, status, time);
+      content.append(title, meta);
+      main.append(bar, content);
+
+      const actions = document.createElement('div');
+      actions.className = 'task-actions';
+
+      const busy = state.busy.has(task.id);
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'btn-toggle' + (task.completed ? ' is-done' : '');
+      toggle.textContent = task.completed ? '标记未完成' : '标记完成';
+      toggle.disabled = busy;
+      toggle.setAttribute(
+        'aria-label',
+        (task.completed ? '将任务标记为未完成：' : '将任务标记为完成：') +
+          task.title,
+      );
+      toggle.addEventListener('click', () => toggleTask(task));
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn-delete';
+      remove.textContent = '删除';
+      remove.disabled = busy;
+      remove.setAttribute('aria-label', '删除任务：' + task.title);
+      remove.addEventListener('click', () => deleteTask(task));
+
+      actions.append(toggle, remove);
+      article.append(main, actions);
+      return article;
+    }
+
+    /* ---------- 事件绑定 ---------- */
+
+    form.addEventListener('submit', addTask);
+    titleInput.addEventListener('input', syncComposer);
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        state.filter = chip.dataset.filter;
+        render();
+      });
+    });
+
+    syncComposer();
+    loadTasks();
+  </script>
+</body>
+</html>
